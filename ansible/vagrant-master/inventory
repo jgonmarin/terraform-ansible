@@ -1,0 +1,14 @@
+plugin: aws_ec2
+regions:
+  - eu-west-1 # Ajusta a tu región
+filters:
+  instance-state-name: running
+keyed_groups:
+  - key: tags.role
+    prefix: tag_role_
+  - key: public_ip_address
+    prefix: public_
+  - key: private_ip_address
+    prefix: private_
+compose:
+  ansible_host: public_ip_address

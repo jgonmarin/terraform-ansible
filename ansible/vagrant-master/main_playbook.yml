@@ -1,0 +1,37 @@
+---
+- name: Playbook para Configurar el Servidor DB (MariaDB)
+  hosts: tag_role_db
+  become: yes
+  gather_facts: yes
+  vars:
+    db_name: wordpress_db
+    db_user: wp_user
+    db_password: "SecurePassword123" # ¡Mejor usar vault!
+  roles:
+    - db
+
+- name: Playbook para Configurar el Servidor Web (Apache, PHP, WordPress)
+  hosts: tag_role_web
+  become: yes
+  gather_facts: yes
+  vars:
+    db_host: "{{ hostvars[groups['tag_role_db'][0]]['private_ip_address'] }}" # Obtenemos la IP privada del DB Server
+    db_name: wordpress_db
+    db_user: wp_user
+    db_password: "SecurePassword123" # Debe coincidir con el DB Playbook
+    web_docroot: /var/www/html
+  roles:
+    - web
+
+- name: Post-Deploy Validation (Opcional - Bonus)
+  hosts: tag_role_web
+  tasks:
+    - name: Verificar si la URL de WordPress está funcionando (HTTP 200)
+      uri:
+        url: http://{{ ansible_host }}
+        method: GET
+        status_code: 200
+      register: _result
+      until: _result.status == 200
+      retries: 5
+      delay: 5
