@@ -1,0 +1,58 @@
+---
+# tasks file for roles/webserver
+- name: install packages
+  apt:
+    name:
+      - apache2
+      - php
+      - php-mysql
+      - libapache2-mod-php
+      - php-mysql
+      - php-curl
+      - php-gd
+      - unzip
+      - php-mbstring
+      - php-xml
+    state: present
+    update_cache: yes
+  notify: Reiniciar Apache
+
+- name: (Cleanup) Ensure DocumentRoot is empty
+  file:
+    path: "{{ web_docroot }}/"
+    state: absent
+
+- name: Creates clean DocumentRoot
+  file:
+    path: "{{ web_docroot }}/"
+    state: directory
+    owner: www-data
+    group: www-data
+
+- name: Download and extract WordPress
+  unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: "{{ web_docroot }}/"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+    owner: www-data
+    group: www-data
+
+- name: config wp-config.php
+  template:
+    src: wp-config.php.j2
+    dest: "{{ web_docroot }}/wp-config.php"
+    owner: www-data
+    group: www-data
+    mode: '0640'
+
+- name: Deletes apache2 default index.html
+  file:
+    path: /var/www/html/index.html
+    state: absent
+
+- name: Ensure apache is enabled
+  service:
+    name: apache2
+    state: started
+    enabled: yes

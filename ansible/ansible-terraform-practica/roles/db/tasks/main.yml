@@ -1,0 +1,39 @@
+---
+# tasks file for roles/db
+- name: Install MariaDB
+  apt:
+    name: 
+      - mariadb-server
+      - python3-pymysql
+    state: present
+    update_cache: yes
+
+- name: Ensure service is running
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Configure MariaDB to accept remote conections
+  lineinfile:
+    path: /etc/mysql/mariadb.conf.d/50-server.cnf
+    regexp: '^bind-address'
+    line: 'bind-address = 0.0.0.0'
+    state: present
+    backup: yes
+  notify: Reiniciar MariaDB
+
+- name: Create db for wordpress
+  mysql_db:
+    name: "{{ db_name }}"
+    state: present
+    login_unix_socket: "/var/run/mysqld/mysqld.sock"
+
+- name: create wordpress user
+  mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    host: '%'
+    priv: '{{ db_name }}.*:ALL'
+    state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock

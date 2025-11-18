@@ -1,0 +1,37 @@
+---
+- name: "Instalar paquetes (Apache, PHP y dependencias CON MÓDULOS)"
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop:
+    - apache2
+    - php
+    - php-mysql
+    - php-json
+    - php-zip
+  notify: Reiniciar Apache
+
+- name: Delete apache index.html
+  file:
+    path: /var/www/html/index.html
+    state: absent
+
+
+- name: Unzip WordPress in DocumentRoot
+  unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: /var/www/html/
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+    owner: www-data
+    group: www-data
+    creates: /var/www/html/wp-load.php
+
+- name: Configurw wp-config.php with Template
+  template:
+    src: wp-config.php.j2
+    dest: "/var/www/html/wp-config.php"
+    owner: www-data
+    group: www-data
+    mode: '0644'

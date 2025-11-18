@@ -1,0 +1,33 @@
+---
+- name: Play to set Mariadb
+  hosts: tag_role_db
+  become: yes
+  vars:
+    db_name: wordpress
+    db_user: wp_user
+    db_password: "wp_pass"
+  roles:
+    - db
+- name: Play to set Webserver
+  hosts: tag_role_webserver
+  become: yes
+  vars:
+    db_host: "{{ hostvars[groups['tag_role_db'][0]]['private_ip_address'] }}"
+    db_name: wordpress
+    db_user: wp_user
+    db_password: "wp_pass"    
+  roles:
+    - webserver
+
+- name: Post-Deploy Validation (Opcional - Bonus)
+  hosts: tag_role_webserver
+  tasks:
+    - name: Verificar si la URL de WordPress está funcionando (HTTP 200)
+      uri:
+        url: http://{{ ansible_host }}
+        method: GET
+        status_code: 200
+      register: _result
+      until: _result.status == 200
+      retries: 5
+      delay: 5

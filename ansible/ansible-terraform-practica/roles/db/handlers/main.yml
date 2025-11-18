@@ -1,0 +1,6 @@
+---
+# handlers file for roles/db
+- name: Reiniciar MariaDB
+  service:
+    name: mariadb
+    state: restarted

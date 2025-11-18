@@ -1,45 +1,39 @@
 #!/bin/bash
 
+set -e
+
+TF_DIR="./terraform"
+ANSIBLE_DIR="./ansible/ansible-terraform-practica"
+INVENTORY="$ANSIBLE_DIR/inventory/aws_ec2.yml"
+
 # --- 1. Ejecutar Terraform ---
 echo "--- 🔨 Create Terraform Infrastructure ---"
-cd terraform || exit 1
+cd "$TF_DIR"
 
-terraform destroy -auto-approve
-if [ $? -ne 0 ]; then
-    echo "❌ Error at Terraform Destroy."
-fi
 terraform init
 terraform apply -auto-approve
 if [ $? -ne 0 ]; then
     echo "❌ Error at Terraform Apply."
     exit 1
 fi
-
+@echo "Waiting for EC2 Instances to be created"
+sleep 80
 # Obtener la IP pública de la instancia web del output de Terraform
 WEB_PUBLIC_IP=$(terraform output -raw web_public_ip)
 if [ -z "$WEB_PUBLIC_IP" ]; then
     echo "❌ Error: 'web_public_ip' is empty."
     exit 1
 fi
+
 echo "✅ Infrastructure created. Web Server IP: ${WEB_PUBLIC_IP}"
 
 cd ..
 
 # --- 3. Ejecutar Ansible Playbook ---
 echo "--- ⚙️ Setting servers with Ansible ---"
-cd ansible/vagrant-master || exit 1
 
-ANSIBLE_COMMAND="cd /home/vagrant/ansible-terraform-practica && ansible-playbook main_playbook.yml"
+chmod 400 $ANSIBLE_DIR/key/clave_ssh_jg.pem
 
-vagrant ssh control -c "$ANSIBLE_COMMAND"
-
-if [ $? -ne 0 ]; then
-    echo "❌ Error at Ansible Playbook. Check the logs."
-    exit 1
-fi
-
-cd ../..
-
-
+ansible-playbook -i "$INVENTORY" "$ANSIBLE_DIR/main_playbook.yml"
 echo "--- 🥳 Deployment Complete ---"
 echo "🌐 Wordpress Website available at: http://${WEB_PUBLIC_IP}"
