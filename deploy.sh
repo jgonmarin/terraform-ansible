@@ -1,11 +1,11 @@
 #!/bin/bash
 
-set -e
+
 
 TF_DIR="./terraform"
 ANSIBLE_DIR="./ansible/ansible-terraform-practica"
 INVENTORY="$ANSIBLE_DIR/inventory/aws_ec2.yml"
-
+SSH_KEY="$ANSIBLE_DIR/key/clave_ssh_jg.pem"
 
 
 install_dependencies() {
@@ -79,8 +79,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-@echo "Waiting for EC2 Instances to be created"
-sleep 80
+echo "Waiting for EC2 Instances to be created"
+sleep 30
 # Obtener la IP pública de la instancia web del output de Terraform
 WEB_PUBLIC_IP=$(terraform output -raw web_public_ip)
 if [ -z "$WEB_PUBLIC_IP" ]; then
@@ -101,8 +101,8 @@ if [ -f "$SSH_KEY" ]; then
 else
     echo "⚠️ Warning: SSH Key not found at $SSH_KEY. Ansible might fail if it's not in the default path."
 fi
-export ANSIBLE_HOST_KEY_CHECKING=False
 
+export ANSIBLE_CONFIG=./ansible/ansible-terraform-practica/ansible.cfg
 
 ansible-playbook -i "$INVENTORY" "$ANSIBLE_DIR/main_playbook.yml"
 echo "--- 🥳 Deployment Complete ---"
